@@ -44,3 +44,21 @@ def create_vector_store():
     db = FAISS.from_documents(texts, embeddings)
     db.save_local(VECTOR_STORE_PATH)
     print("--- Indexing complete ---")
+    
+    # --- 3. LLM and RAG Chain Setup ---
+def setup_qa_chain():
+    """Initializes the RAG chain with a reranker for improved accuracy."""
+    embeddings = HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL,
+        model_kwargs={'device': 'cuda' if torch.cuda.is_available() else 'cpu'}
+    )
+
+    print("Loading vector store...")
+    db = FAISS.load_local(
+        VECTOR_STORE_PATH,
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
+    print("Initializing the reranker...")
+    reranker_model = HuggingFaceCrossEncoder(model_name='cross-encoder/ms-marco-MiniLM-L-6-v2')
