@@ -45,7 +45,7 @@ def create_vector_store():
     db.save_local(VECTOR_STORE_PATH)
     print("--- Indexing complete ---")
     
-    # --- 3. LLM and RAG Chain Setup ---
+    # 3. LLM and RAG Chain Setup
 def setup_qa_chain():
     """Initializes the RAG chain with a reranker for improved accuracy."""
     embeddings = HuggingFaceEmbeddings(
@@ -62,3 +62,36 @@ def setup_qa_chain():
 
     print("Initializing the reranker...")
     reranker_model = HuggingFaceCrossEncoder(model_name='cross-encoder/ms-marco-MiniLM-L-6-v2')
+
+    #FIX: Change top_n from 3 to 1 to ensure the context fits the model
+    compressor = CrossEncoderReranker(model=reranker_model, top_n=1)
+
+    base_retriever = db.as_retriever(search_kwargs={"k": 10})
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor, base_retriever=base_retriever
+    )
+
+    print(f"Loading local LLM '{LLM_MODEL}'...")
+    tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
+    model = AutoModelForSeq2SeqLM.from_pretrained(LLM_MODEL)
+
+    pipe = pipeline(
+        "text2text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_length=1024,
+        temperature=0.1,
+        top_p=0.95,
+        device=0 if torch.cuda.is_available() else -1
+    )
+    llm = HuggingFacePipeline(pipeline=pipe)
+
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",
+        retriever=compression_retriever,
+        return_source_documents=True
+    )
+
+    print("--- RAG chain is ready ---")
+    return qa_chain
