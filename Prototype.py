@@ -95,3 +95,32 @@ def setup_qa_chain():
 
     print("--- RAG chain is ready ---")
     return qa_chain
+
+#4. Main Execution and User Interaction
+if __name__ == "__main__":
+    if not os.path.exists(VECTOR_STORE_PATH):
+        create_vector_store()
+
+    qa_chain = setup_qa_chain()
+
+    print("\nWelcome! You can now ask questions about your documents.")
+    print("Type 'exit' or 'quit' to end the session.\n")
+    while True:
+        query = input("Ask a question: ")
+
+        if query.lower() in ["exit", "quit"]:
+            print("Session ended. Goodbye!")
+            break
+
+        if not query.strip():
+            continue
+
+        result = qa_chain.invoke({"query": query})
+
+        print("\n--- Answer ---\n")
+        print(result["result"])
+        print("\n--- Sources ---\n")
+
+        for source in result["source_documents"]:
+            print(f"  - Source Document: {os.path.basename(source.metadata['source'])}")
+            print(f"    Content Snippet: {source.page_content[:250]}...\n")
