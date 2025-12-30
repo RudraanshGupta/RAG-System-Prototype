@@ -42,8 +42,8 @@ Follow these steps to set up and run the RAG system:
 ### 2\. Project Structure
 
 `   project_folder/  
-├── rag_system_.py  
-└── docs/      
+├── prototype.py  
+└── Sample Input Docs/      
 └── document_1.pdf      
 └── document_2.pdf      
 └── (a11 files)   `
